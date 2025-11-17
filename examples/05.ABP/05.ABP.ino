@@ -10,7 +10,7 @@
  *@author [Martin](Martin@dfrobot.com)
  *@version V0.0.1
  *@date 2025-2-27
- *@url https://github.com/DFRobot/DFRobot_LoRaWAN
+ *@url https://github.com/DFRobot/DFRobot_LoRaWAN_ESP32S3
  */
 #include "DFRobot_LoRaWAN.h"
 #define APP_INTERVAL_MS 10000

@@ -257,7 +257,8 @@ DFRobot_ST7735_80x160_HW_SPI::~DFRobot_ST7735_80x160_HW_SPI(){}
 void DFRobot_ST7735_80x160_HW_SPI::begin(uint32_t freq)
 {
   begin(NULL,freq);
-
+  pinMode(48, OUTPUT);
+  digitalWrite(48, LOW);      // LCD供电
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH); // 拉高背光引脚
 }

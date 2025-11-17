@@ -7,7 +7,7 @@
  *@version V0.0.1
  *@date 2025-1-17
  *@get from https://www.dfrobot.com
- *@url https://github.com/DFRobot/DFRobot_LoRaWAN
+ *@url https://github.com/DFRobot/DFRobot_LoRaWAN_ESP32S3
  */
 #include <Arduino.h>
 #include "DFRobot_LoRaWAN.h"

@@ -7,7 +7,7 @@
  *@author [Martin](Martin@dfrobot.com)
  *@version V0.0.1
  *@date 2025-3-14
- *@url https://github.com/DFRobot/DFRobot_LoRaWAN
+ *@url https://github.com/DFRobot/DFRobot_LoRaWAN_ESP32S3
  */
 #include "DFRobot_LoRaRadio.h"
 

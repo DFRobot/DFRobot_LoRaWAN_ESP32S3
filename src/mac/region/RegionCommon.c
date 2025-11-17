@@ -542,48 +542,119 @@ void RegionCommonRxBeaconSetup( RegionCommonRxBeaconSetupParams_t* rxBeaconSetup
     Radio.Rx( rxBeaconSetupParams->RxTime );
 }
 
-void RegionCommonCountNbOfEnabledChannels( RegionCommonCountNbOfEnabledChannelsParams_t* countNbOfEnabledChannelsParams,
-                                           uint8_t* enabledChannels, uint8_t* nbEnabledChannels, uint8_t* nbRestrictedChannels )
+#include <Arduino.h>
+
+void RegionCommonCountNbOfEnabledChannels(
+    RegionCommonCountNbOfEnabledChannelsParams_t* countNbOfEnabledChannelsParams,
+    uint8_t* enabledChannels, 
+    uint8_t* nbEnabledChannels, 
+    uint8_t* nbRestrictedChannels) 
 {
     uint8_t nbChannelCount = 0;
     uint8_t nbRestrictedChannelsCount = 0;
+    
+    // 调试标记
+    bool joined = countNbOfEnabledChannelsParams->Joined;
+    printf("\n[ChannelScan] Device Joined: %s", joined ? "YES" : "NO");
+    printf(" | DR: %u | MaxCh: %u", 
+        countNbOfEnabledChannelsParams->Datarate,
+        countNbOfEnabledChannelsParams->MaxNbChannels);
+    
+    // 打印当前信道掩码配置
+    printf("\n[ChannelMask] HEX: ");
+    for (uint8_t k = 0; k < (countNbOfEnabledChannelsParams->MaxNbChannels+15)/16; k++) {
+        printf("%04X ", countNbOfEnabledChannelsParams->ChannelsMask[k]);
+    }
 
-    for( uint8_t i = 0, k = 0; i < countNbOfEnabledChannelsParams->MaxNbChannels; i += 16, k++ )
+    // 遍历所有信道
+    for (uint8_t i = 0, k = 0; i < countNbOfEnabledChannelsParams->MaxNbChannels; i += 16, k++) 
     {
-        for( uint8_t j = 0; j < 16; j++ )
+        for (uint8_t j = 0; j < 16; j++) 
         {
-            if( ( countNbOfEnabledChannelsParams->ChannelsMask[k] & ( 1 << j ) ) != 0 )
-            {
-                if( countNbOfEnabledChannelsParams->Channels[i + j].Frequency == 0 )
-                { // Check if the channel is enabled
-                    continue;
-                }
-                if( ( countNbOfEnabledChannelsParams->Joined == false ) &&
-                    ( countNbOfEnabledChannelsParams->JoinChannels != NULL ) )
-                {
-                    if( ( countNbOfEnabledChannelsParams->JoinChannels[k] & ( 1 << j ) ) == 0 )
-                    {
-                        continue;
-                    }
-                }
-                if( RegionCommonValueInRange( countNbOfEnabledChannelsParams->Datarate,
-                                              countNbOfEnabledChannelsParams->Channels[i + j].DrRange.Fields.Min,
-                                              countNbOfEnabledChannelsParams->Channels[i + j].DrRange.Fields.Max ) == false )
-                { // Check if the current channel selection supports the given datarate
-                    continue;
-                }
-                if( countNbOfEnabledChannelsParams->Bands[countNbOfEnabledChannelsParams->Channels[i + j].Band].ReadyForTransmission == false )
-                { // Check if the band is available for transmission
-                    nbRestrictedChannelsCount++;
-                    continue;
-                }
-                enabledChannels[nbChannelCount++] = i + j;
+            uint8_t channelIndex = i + j;
+            uint16_t channelMask = (1 << j);
+            bool maskEnabled = (countNbOfEnabledChannelsParams->ChannelsMask[k] & channelMask) != 0;
+            
+            // 跳过未使能信道
+            if (!maskEnabled) {
+                continue;
             }
+
+            // 打印当前信道状态
+            printf("\n[CH:%2d] Masked: YES | Freq: %lu Hz", 
+                channelIndex, countNbOfEnabledChannelsParams->Channels[channelIndex].Frequency);
+            
+            // 检查1: 基础频率是否启用
+            if (countNbOfEnabledChannelsParams->Channels[channelIndex].Frequency == 0) {
+                printf(" | REJECTED: Freq=0 (Channel not enabled)");
+                continue;
+            }
+
+            // 检查2: 未加入时Join掩码验证
+            if (!joined && countNbOfEnabledChannelsParams->JoinChannels != NULL) 
+            {
+                bool joinAllowed = (countNbOfEnabledChannelsParams->JoinChannels[k] & channelMask) != 0;
+                printf(" | JoinMask: %s", joinAllowed ? "Allowed" : "Blocked");
+                
+                if (!joinAllowed) {
+                    printf(" | REJECTED: JoinMask disallow");
+                    continue;
+                }
+            }
+
+            // 检查3: DR范围验证
+            DrRange_t drRange = countNbOfEnabledChannelsParams->Channels[channelIndex].DrRange;
+            bool drValid = RegionCommonValueInRange(
+                countNbOfEnabledChannelsParams->Datarate,
+                drRange.Fields.Min, 
+                drRange.Fields.Max
+            );
+            
+            printf(" | DR Range: %d-%d | CurrDR: %d -> %s",
+                drRange.Fields.Min, drRange.Fields.Max,
+                countNbOfEnabledChannelsParams->Datarate,
+                drValid ? "Valid" : "INVALID");
+            
+            if (!drValid) {
+                printf(" | REJECTED: DR mismatch");
+                continue;
+            }
+
+            // 检查4: 频段可用性
+            uint8_t bandIdx = countNbOfEnabledChannelsParams->Channels[channelIndex].Band;
+            Band_t* band = &countNbOfEnabledChannelsParams->Bands[bandIdx];
+            printf(" | Band: %d | Ready: %s", bandIdx, band->ReadyForTransmission ? "YES" : "NO");
+            
+            if (!band->ReadyForTransmission) {
+                nbRestrictedChannelsCount++;
+                printf(" | RESTRICTED: Band busy");
+                continue;
+            }
+
+            // 通过所有检查的信道
+            enabledChannels[nbChannelCount++] = channelIndex;
+            printf(" | ACCEPTED");
         }
     }
+    
+    // 输出最终计数
     *nbEnabledChannels = nbChannelCount;
     *nbRestrictedChannels = nbRestrictedChannelsCount;
+    
+    printf("\n[ChannelScanResult] Enabled: %d | Restricted: %d", 
+        *nbEnabledChannels, *nbRestrictedChannels);
+        
+    // 详细列出可用信道
+    if (*nbEnabledChannels > 0) {
+        printf(" | IDs: ");
+        for (int i = 0; i < *nbEnabledChannels; i++) {
+            printf("%d ", enabledChannels[i]);
+        }
+    }
+    printf("\n");
 }
+
+
 
 LoRaMacStatus_t RegionCommonIdentifyChannels( RegionCommonIdentifyChannelsParam_t* identifyChannelsParam,
                                               TimerTime_t* aggregatedTimeOff, uint8_t* enabledChannels,
@@ -594,6 +665,9 @@ LoRaMacStatus_t RegionCommonIdentifyChannels( RegionCommonIdentifyChannelsParam_
     *nextTxDelay = identifyChannelsParam->AggrTimeOff - elapsed;
     *nbRestrictedChannels = 1;
     *nbEnabledChannels = 0;
+
+    printf("identifyChannelsParam->LastAggrTx = %d\nelapsed = %d\nidentifyChannelsParam->AggrTimeOff = %d\n", identifyChannelsParam->LastAggrTx, 
+    elapsed, identifyChannelsParam->AggrTimeOff);
 
     if( ( identifyChannelsParam->LastAggrTx == 0 ) ||
         ( identifyChannelsParam->AggrTimeOff <= elapsed ) )
@@ -613,7 +687,7 @@ LoRaMacStatus_t RegionCommonIdentifyChannels( RegionCommonIdentifyChannelsParam_
         RegionCommonCountNbOfEnabledChannels( identifyChannelsParam->CountNbOfEnabledChannelsParam, enabledChannels,
                                               nbEnabledChannels, nbRestrictedChannels );
     }
-
+printf("\nnbEnabledChannels = %d\nnbRestrictedChannels = %d\n", *nbEnabledChannels, *nbRestrictedChannels);
     if( *nbEnabledChannels > 0 )
     {
         *nextTxDelay = 0;

@@ -1,6 +1,6 @@
-# DFRobot_LoRaWAN
+# DFRobot_LoRaWAN_ESP32S3
 
-DFRobot_LoRaWAN is an Arduino communication library developed for the DFR1195 node, enabling the node to communicate with the gateway using the LoRaWAN 1.0.3 protocol stack. It also integrates the DFRobot_LoRaRadio library, allowing for LoRa point-to-point communication between nodes.
+DFRobot_LoRaWAN_ESP32S3 is an Arduino communication library developed for the DFR1195 node, enabling the node to communicate with the gateway using the LoRaWAN 1.0.3 protocol stack. It also integrates the DFRobot_LoRaRadio library, allowing for LoRa point-to-point communication between nodes.
 
 ## Product Link 
 
@@ -384,7 +384,7 @@ To use this library, first download the library file, paste it into the \Arduino
 
 ## History
 
-- 2025/05/15 - Version 0.9.1 released.
+- 2025/11/17 - Version 1.0.0 released.
 
 ## Credits
 
