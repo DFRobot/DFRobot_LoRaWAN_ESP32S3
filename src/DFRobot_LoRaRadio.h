@@ -12,7 +12,7 @@
 #ifndef __DFROBOT_LORARADIO_H_
 #define __DFROBOT_LORARADIO_H_
 
-#include "external\DFRobot_GDL_LW\src\DFRobot_GDL_LW.h"
+#include "external/DFRobot_GDL_LW/src/DFRobot_GDL_LW.h"
 #include "radio/radio.h"
 #include <string.h>
 #include "radio/sx126x/sx126x.h"

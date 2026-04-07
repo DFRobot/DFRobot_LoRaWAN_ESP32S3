@@ -12,7 +12,7 @@
 #ifndef __LORAWANNODE_H_
 #define __LORAWANNODE_H_
 
-#include "external\DFRobot_GDL_LW\src\DFRobot_GDL_LW.h"
+#include "external/DFRobot_GDL_LW/src/DFRobot_GDL_LW.h"
 #include "boards/mcu/board.h"
 #include "system/utilities.h"
 #include "boards/mcu/timer.h"

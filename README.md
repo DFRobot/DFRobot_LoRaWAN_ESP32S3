@@ -385,6 +385,7 @@ To use this library, first download the library file, paste it into the \Arduino
 ## History
 
 - 2025/11/17 - Version 1.0.0 released.
+- 2026/04/07 - Version 1.0.1 released.
 
 ## Credits
 
